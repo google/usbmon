@@ -35,15 +35,15 @@ void logmsg(int s, char *msg, ...) {
     char *err[] = { "", " WARNING:", " ERROR:" };
 
     time(&t);
-    l=localtime(&t);
+    l = localtime(&t);
     uname(&u);
-    if(s>2) 
-        s=2;
-    if(s<0) 
-        s=0;
+    if(s > 2) 
+        s = 2;
+    if(s < 0) 
+        s = 0;
     fflush(stdout);
     printf("%04d/%02d/%02d %02d:%02d:%02d %s:%s ",
-        l->tm_year+1900, l->tm_mon+1, l->tm_mday,
+        l->tm_year + 1900, l->tm_mon + 1, l->tm_mday,
         l->tm_hour, l->tm_min, l->tm_sec,
         u.nodename, err[s]
     );
@@ -54,7 +54,7 @@ void logmsg(int s, char *msg, ...) {
         printf(" [%s (%d)]", strerror(errno), errno);
     putchar('\n');
     fflush(stdout);
-    if(s==ERROR)
+    if(s == ERROR)
         exit(1);
 }
 
@@ -64,12 +64,12 @@ int main(int argc, char **argv) {
     struct udev_monitor *mon;
     struct udev_device *dev;
     struct udev_list_entry *lst;
-    struct udev_list_entry *entr=NULL;
+    struct udev_list_entry *entr = NULL;
     const char *path, *usbpath, *vendor, *serial, *speed, *action;
     int fd,ret;
     fd_set fds;
 
-    udev=udev_new();
+    udev = udev_new();
     if(!udev)
         logmsg(ERROR, "udev_new() failed\n");
 
@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
     udev_list_entry_foreach(entr, lst) {
         path=udev_list_entry_get_name(entr);
         dev=udev_device_new_from_syspath(udev, path);
-        if(dev && strcmp(udev_device_get_devtype(dev), "usb_device")==0) {
+        if(dev && strcmp(udev_device_get_devtype(dev), "usb_device") == 0) {
             usbpath=strstr(udev_device_get_devpath(dev), "usb");
             vendor=udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
             serial=udev_device_get_property_value(dev, "ID_SERIAL");
@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
     }
     udev_enumerate_unref(enu);
 
-    if(argc>1 && strcmp(argv[1], "-n")==0)
+    if(argc > 1 && strcmp(argv[1], "-n") == 0)
        return 0;
 
     logmsg(INFO, "--------- Begin USB Event Monitoring -----------");
@@ -111,24 +111,24 @@ int main(int argc, char **argv) {
     udev_monitor_filter_add_match_subsystem_devtype(mon, "usb", NULL);
     udev_monitor_enable_receiving(mon);
 
-    fd=udev_monitor_get_fd(mon);
+    fd = udev_monitor_get_fd(mon);
 
     while(1) {
         FD_ZERO(&fds);
         FD_SET(fd, &fds);
 
-        ret=select(fd+1, &fds, NULL, NULL, NULL);
-        if(ret<=0)
+        ret = select(fd + 1, &fds, NULL, NULL, NULL);
+        if(ret <= 0)
             break;
 
         if(FD_ISSET(fd, &fds)) {
-            dev=udev_monitor_receive_device(mon);
-            if(dev && strcmp(udev_device_get_devtype(dev), "usb_device")==0) {
-                usbpath=strstr(udev_device_get_devpath(dev), "usb");
-                vendor=udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
-                serial=udev_device_get_property_value(dev, "ID_SERIAL");
-                speed=udev_device_get_sysattr_value(dev, "speed");
-                action=udev_device_get_action(dev),
+            dev = udev_monitor_receive_device(mon);
+            if(dev && strcmp(udev_device_get_devtype(dev), "usb_device") == 0) {
+                usbpath = strstr(udev_device_get_devpath(dev), "usb");
+                vendor = udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
+                serial = udev_device_get_property_value(dev, "ID_SERIAL");
+                speed = udev_device_get_sysattr_value(dev, "speed");
+                action = udev_device_get_action(dev),
                 logmsg(INFO, "%6s %s %s %s %s",
                     (action) ? action : "N/A",
                     (usbpath) ? usbpath : "N/A",
