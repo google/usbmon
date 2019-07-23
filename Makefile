@@ -1,5 +1,5 @@
 all:
-	gcc -Wall -O3 -o usbtool usbtool.c -ludev
+	$(CC) -Wall -O3 -o usbtool usbtool.c -ludev
 	strip usbtool
 
 clean:
