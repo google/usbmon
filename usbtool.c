@@ -60,6 +60,11 @@ void logmsg(int state, char *msg, ...) {
 }
 
 int main(int argc, char **argv) {
+    if(argc > 1 && strcmp(argv[1], "--help") == 0){
+        printf("usbtool [-n] [-l] \n\t-n (optional) do not monitor and print events\n\t-l (optional) output the result into log.txt\n");
+        return 0;
+    }
+
     struct udev *udev;
     struct udev_enumerate *enu;
     struct udev_monitor *mon;
