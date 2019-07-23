@@ -26,35 +26,36 @@
 #include <libudev.h>
 
 enum { INFO, WARNING, ERROR };
-
-void logmsg(int s, char *msg, ...) {
+void logmsg(int state, char *msg, ...) {
     va_list ap;
     time_t t;
     struct tm *l;
     struct utsname u;
     char *err[] = { "", " WARNING:", " ERROR:" };
-
+    
     time(&t);
     l = localtime(&t);
     uname(&u);
-    if(s > 2) 
-        s = 2;
-    if(s < 0) 
-        s = 0;
+    
+    if(state > 2) 
+        state = 2;
+    if(state < 0) 
+        state = 0;
     fflush(stdout);
+    
     printf("%04d/%02d/%02d %02d:%02d:%02d %s:%s ",
         l->tm_year + 1900, l->tm_mon + 1, l->tm_mday,
         l->tm_hour, l->tm_min, l->tm_sec,
-        u.nodename, err[s]
+        u.nodename, err[state]
     );
     va_start(ap, msg);
     vprintf(msg, ap);
     va_end(ap);
-    if(s)
+    if(state)
         printf(" [%s (%d)]", strerror(errno), errno);
     putchar('\n');
     fflush(stdout);
-    if(s == ERROR)
+    if(state == ERROR)
         exit(1);
 }
 
@@ -73,7 +74,7 @@ int main(int argc, char **argv) {
     if(!udev)
         logmsg(ERROR, "udev_new() failed\n");
 
-    enu=udev_enumerate_new(udev);
+    enu = udev_enumerate_new(udev);
     if(!enu)
         logmsg(ERROR, "udev_enumerate_new() failed\n");
         
