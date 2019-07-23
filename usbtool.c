@@ -51,7 +51,7 @@ void logmsg(int state, char *msg, ...) {
     va_start(ap, msg);
     vprintf(msg, ap);
     va_end(ap);
-    if(state)
+    if(state != INFO)
         printf(" [%s (%d)]", strerror(errno), errno);
     putchar('\n');
     fflush(stdout);
@@ -81,15 +81,15 @@ int main(int argc, char **argv) {
     udev_enumerate_add_match_subsystem(enu, "usb");
     udev_enumerate_scan_devices(enu);
 
-    lst=udev_enumerate_get_list_entry(enu);
+    lst = udev_enumerate_get_list_entry(enu);
     udev_list_entry_foreach(entr, lst) {
-        path=udev_list_entry_get_name(entr);
-        dev=udev_device_new_from_syspath(udev, path);
+        path = udev_list_entry_get_name(entr);
+        dev = udev_device_new_from_syspath(udev, path);
         if(dev && strcmp(udev_device_get_devtype(dev), "usb_device") == 0) {
-            usbpath=strstr(udev_device_get_devpath(dev), "usb");
-            vendor=udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
-            serial=udev_device_get_property_value(dev, "ID_SERIAL");
-            speed=udev_device_get_sysattr_value(dev, "speed");
+            usbpath = strstr(udev_device_get_devpath(dev), "usb");
+            vendor = udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
+            serial = udev_device_get_property_value(dev, "ID_SERIAL");
+            speed = udev_device_get_sysattr_value(dev, "speed");
             printf("%s: %s %s %s\n",
                 (usbpath) ? usbpath : "N/A",
                 (vendor) ? vendor : "N/A",
@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
 
     logmsg(INFO, "--------- Begin USB Event Monitoring -----------");
 
-    mon=udev_monitor_new_from_netlink(udev, "udev");
+    mon = udev_monitor_new_from_netlink(udev, "udev");
     if(!mon)
         logmsg(ERROR, "udev_monitor_new_from_netlink() failed\n");
     udev_monitor_filter_add_match_subsystem_devtype(mon, "usb", NULL);
