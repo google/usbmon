@@ -26,6 +26,18 @@
 #include <libudev.h>
 
 enum { INFO, WARNING, ERROR };
+
+int isopt(int argc, char **argv, const char *opt){
+
+    for(int i = 1; i < argc; ++i){
+
+        if(strcmp(argv[i], opt) == 0)
+	    return 1;	//opt option has been inputted.
+    }
+
+    return 0;
+}
+
 void logmsg(int state, char *msg, ...) {
     va_list ap;
     time_t t;
@@ -60,7 +72,8 @@ void logmsg(int state, char *msg, ...) {
 }
 
 int main(int argc, char **argv) {
-    if(argc > 1 && strcmp(argv[1], "--help") == 0){
+
+    if(isopt(argc, argv, "--help")){
         printf("usbtool [-n] [-l] \n\t-n (optional) do not monitor and print events\n\t-l (optional) output the result into log.txt\n");
         return 0;
     }
@@ -106,7 +119,7 @@ int main(int argc, char **argv) {
     }
     udev_enumerate_unref(enu);
 
-    if(argc > 1 && strcmp(argv[1], "-n") == 0)
+    if(isopt(argc, argv, "-n"))
        return 0;
 
     logmsg(INFO, "--------- Begin USB Event Monitoring -----------");
