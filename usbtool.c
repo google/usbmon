@@ -73,11 +73,6 @@ void logmsg(int state, char *msg, ...) {
 
 int main(int argc, char **argv) {
 
-    if(isopt(argc, argv, "--help")){
-        printf("usbtool [-n] [-l] \n\t-n (optional) do not monitor and print events\n\t-l (optional) output the result into log.txt\n");
-        return 0;
-    }
-
     struct udev *udev;
     struct udev_enumerate *enu;
     struct udev_monitor *mon;
@@ -87,6 +82,11 @@ int main(int argc, char **argv) {
     const char *path, *usbpath, *vendor, *serial, *speed, *action;
     int fd,ret;
     fd_set fds;
+
+    if(isopt(argc, argv, "--help")){
+        printf("usbtool [-n] \n\t-n (optional) do not monitor and print events\n");
+        return 0;
+    }
 
     udev = udev_new();
     if(!udev)
@@ -160,6 +160,5 @@ int main(int argc, char **argv) {
         }
     }
     udev_unref(udev);
-
     return 0;
 }

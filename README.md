@@ -17,10 +17,9 @@ Usage
 -----
 
 ```
-usbtool [-n] [-l]
+usbtool [-n]
 
   -n (optional) do not monitor and print events
-  -l (optional) output the result into log.txt
 ```
 
 License
