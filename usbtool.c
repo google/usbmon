@@ -27,14 +27,9 @@
 
 enum { INFO, WARNING, ERROR };
 
-int isopt(int argc, char **argv, const char *opt){
-
-    for(int i = 1; i < argc; ++i){
-
-        if(strcmp(argv[i], opt) == 0)
-	    return 1;	//opt option has been inputted.
-    }
-
+int isopt(int argc, char **argv, const char *opt) {
+    for(int i = 1; i < argc && strcmp(argv[i], opt) == 0; ++i)
+        return 1;	//opt option has been inputted.
     return 0;
 }
 
