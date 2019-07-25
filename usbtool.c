@@ -78,8 +78,8 @@ int main(int argc, char **argv) {
     int fd,ret;
     fd_set fds;
 
-    if(isopt(argc, argv, "--help")){
-        printf("usbtool [-n] \n\t-n (optional) do not monitor and print events\n");
+    if(isopt(argc, argv, "--help") || isopt(argc, argv, "-h")){
+        printf("usbtool [-h|--help][-n] \n\t-h|--help (optional) help you with usbtool\n\t-n        (optional) do not monitor and print events\n");
         return 0;
     }
 

@@ -12,9 +12,9 @@ Usage
 -----
 
 ```
-usbtool [-n]
-
-  -n (optional) do not monitor and print events
+usbtool [-h|--help][-n]
+  -h|--help (optional) help you with usbtool
+  -n        (optional) do not monitor and print events
 ```
 
 License
