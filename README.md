@@ -6,12 +6,7 @@ The tool will print out a list of connected devices with USB path, vendor, seria
 
 Requirement
 -----------
-* libudev
-
-You can simply install it using fallowing command:
-```
-sudo apt-get install libudev-dev
-```
+requires libudev-dev
 
 Usage
 -----
