@@ -1,5 +1,8 @@
-all:
-	gcc -Wall -O3 -o usbtool usbtool.c -ludev
+CFLAGS = -Wall -O3 -o
+LIBS = -ludev
+
+all: Makefile usbtool.c
+	$(CC) $(CFLAGS) usbtool usbtool.c $(LIBS)
 	strip usbtool
 
 clean:
