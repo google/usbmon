@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
     fd_set fds;
 
     if(isopt(argc, argv, "--help") || isopt(argc, argv, "-h")){
-        printf("usbtool [-h|--help][-n] \n\t-h|--help (optional) help you with usbtool\n\t-n        (optional) do not monitor and print events\n");
+        printf("usbmon [-h|--help][-n] \n\t-h|--help (optional) help\n\t-n        (optional) do not monitor and print events\n");
         return 0;
     }
 
