@@ -1,8 +1,8 @@
 USBMON
 ======
-A tool to enumerate, list and monitor USB devices connected to a Linux host.
+List and monitor USB devices connected to a Linux host.
 
-The tool will print out a list of connected devices with USB path, vendor, serial and connection speed. Following that it will start monitoring for udev events such as connect or disconnect and print them with a timestamp. Uses `libudev`.
+The tool will print out a list of connected devices with USB path, vendor, serial and connection speed. It will then monitor udev events such as connect or disconnect and print them with a timestamp. 
 
 Requirement
 -----------
@@ -13,7 +13,7 @@ Usage
 
 ```
 usbmon [-h|--help][-n]
-  -h|--help (optional) help you with usbtool
+  -h|--help (optional) help
   -n        (optional) do not monitor and print events
 ```
 
