@@ -1,7 +1,7 @@
 # USBMON
 A tool to enumerate, list and monitor USB devices connected to a Linux host.
 
-Print out a list of connected devices with USB path, vendor, make, model, serial and connection speed. 
+Print a list of connected devices with USB path, vendor, make, model, serial and connection speed. 
 Monitor udev events such as connect or disconnect and print them with a timestamp. 
 
 New: Experimental collectd plugin mode.
