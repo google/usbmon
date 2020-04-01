@@ -7,7 +7,7 @@ Following that it will start monitoring for udev events such as connect or disco
 New: Experimental collectd plugin mode.
 
 ## Requirements
-requires libudev-dev
+requires `libudev-dev`
 
 ## Usage
 
