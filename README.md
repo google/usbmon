@@ -16,7 +16,7 @@ requires libudev-dev
 ```
 usbmon [-h|--help][-n][-c]
         -h|--help (optional) help
-        -n        (optional) do not monitor events
+        -n        (optional) do not monitor events
         -c        (optional) collectd exec plugin mode
 ```
 
