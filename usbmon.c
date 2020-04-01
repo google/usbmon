@@ -125,6 +125,7 @@ int main(int argc, char **argv) {
             if(co) {
                 cv.connected++;
             } else {
+            // TODO(tenox): make this to a separate print function
                 usbpath = strstr(udev_device_get_devpath(dev), "usb");
                 vendor = udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
                 serial = udev_device_get_property_value(dev, "ID_SERIAL");
@@ -177,6 +178,7 @@ int main(int argc, char **argv) {
                         cv.connected--;
                     }
                 } else {
+                // TODO(tenox): make this to a separate print function
                     usbpath = strstr(udev_device_get_devpath(dev), "usb");
                     vendor = udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
                     serial = udev_device_get_property_value(dev, "ID_SERIAL");
