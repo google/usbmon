@@ -1,8 +1,8 @@
 # USBMON
 A tool to enumerate, list and monitor USB devices connected to a Linux host.
 
-The tool will print out a list of connected devices with USB path, vendor, serial and connection speed. 
-Following that it will start monitoring for udev events such as connect or disconnect and print them with a timestamp. 
+Print out a list of connected devices with USB path, vendor, make, model, serial and connection speed. 
+Monitoring for udev events such as connect or disconnect and print them with a timestamp. 
 
 New: Experimental collectd plugin mode.
 
@@ -21,7 +21,7 @@ usbmon [-h|--help][-n][-c]
 ```
 
 ### Experimental collectd plugin mode
-Usbmon can operate as collectd exec plugin, this feature is experimental.
+Usbmon can operate as collectd exec plugin.
 
 Add a new type to `/usr/share/collectd/types.db`:
 
