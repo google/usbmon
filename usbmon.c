@@ -16,16 +16,24 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
 #include <errno.h>
 #include <limits.h>
 #include <sys/utsname.h>
-
 #include <libudev.h>
 
-enum { INFO, WARNING, ERROR };
+
+struct collectd {
+    double connected;
+    uint32_t adds;
+    uint32_t removes;
+};
+
+char host[256];
+char fqdn[1024];
 
 int isopt(int argc, char **argv, const char *opt) {
     for(int i = 1; i < argc && strcmp(argv[i], opt) == 0; ++i)
@@ -33,16 +41,16 @@ int isopt(int argc, char **argv, const char *opt) {
     return 0;
 }
 
+enum { INFO, WARNING, ERROR };
+
 void logmsg(int state, char *msg, ...) {
     va_list ap;
     time_t t;
     struct tm *l;
-    struct utsname u;
     char *err[] = { "", " WARNING:", " ERROR:" };
     
     time(&t);
     l = localtime(&t);
-    uname(&u);
     
     if(state > 2) 
         state = 2;
@@ -53,7 +61,7 @@ void logmsg(int state, char *msg, ...) {
     printf("%04d/%02d/%02d %02d:%02d:%02d %s:%s ",
         l->tm_year + 1900, l->tm_mon + 1, l->tm_mday,
         l->tm_hour, l->tm_min, l->tm_sec,
-        u.nodename, err[state]
+        host, err[state]
     );
     va_start(ap, msg);
     vprintf(msg, ap);
@@ -66,23 +74,40 @@ void logmsg(int state, char *msg, ...) {
         exit(1);
 }
 
-int main(int argc, char **argv) {
+void putval(struct collectd *cv) {
+    printf("PUTVAL %s/usb/udev N:%.0f:%u:%u\n", fqdn, cv->connected, cv->adds, cv->removes);
+    fflush(stdout);
+}
 
+int main(int argc, char **argv) {
     struct udev *udev;
     struct udev_enumerate *enu;
     struct udev_monitor *mon;
     struct udev_device *dev;
     struct udev_list_entry *lst;
     struct udev_list_entry *entr = NULL;
+    struct timeval ti;
+    struct collectd cv;
+    struct utsname u;
     const char *path, *usbpath, *vendor, *serial, *speed, *action;
-    int fd,ret;
+    int fd, ret, co = 0;
     fd_set fds;
 
     if(isopt(argc, argv, "--help") || isopt(argc, argv, "-h")){
-        printf("usbmon [-h|--help][-n] \n\t-h|--help (optional) help\n\t-n        (optional) do not monitor and print events\n");
+        printf("usbmon [-h|--help][-n][-c] \n\t-h|--help (optional) help\n" \
+        "\t-n        (optional) do not monitor events\n" \
+        "\t-c        (optional) collectd exec plugin mode\n");
         return 0;
     }
 
+    if(isopt(argc, argv, "-c")) 
+        co = 1; // collectd plugin mode
+        
+    memset(&cv, 0, sizeof(struct collectd));
+    uname(&u);
+    snprintf(host, sizeof(host), "%s", u.nodename);
+    snprintf(fqdn, sizeof(fqdn), "%s.%s", u.nodename, u.__domainname);
+            
     udev = udev_new();
     if(!udev)
         logmsg(ERROR, "udev_new() failed\n");
@@ -99,16 +124,20 @@ int main(int argc, char **argv) {
         path = udev_list_entry_get_name(entr);
         dev = udev_device_new_from_syspath(udev, path);
         if(dev && strcmp(udev_device_get_devtype(dev), "usb_device") == 0) {
-            usbpath = strstr(udev_device_get_devpath(dev), "usb");
-            vendor = udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
-            serial = udev_device_get_property_value(dev, "ID_SERIAL");
-            speed = udev_device_get_sysattr_value(dev, "speed");
-            printf("%s: %s %s %s\n",
-                (usbpath) ? usbpath : "N/A",
-                (vendor) ? vendor : "N/A",
-                (serial) ? serial : "N/A",
-                (speed) ? speed : "N/A"
-            );
+            if(co) {
+                cv.connected++;
+            } else {
+                usbpath = strstr(udev_device_get_devpath(dev), "usb");
+                vendor = udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
+                serial = udev_device_get_property_value(dev, "ID_SERIAL");
+                speed = udev_device_get_sysattr_value(dev, "speed");
+                printf("%s: %s %s %s\n",
+                    (usbpath) ? usbpath : "N/A",
+                    (vendor) ? vendor : "N/A",
+                    (serial) ? serial : "N/A",
+                    (speed) ? speed : "N/A"
+                );
+            }
         }
         udev_device_unref(dev);
     }
@@ -117,7 +146,8 @@ int main(int argc, char **argv) {
     if(isopt(argc, argv, "-n"))
        return 0;
 
-    logmsg(INFO, "--------- Begin USB Event Monitoring -----------");
+    if(!co)
+        logmsg(INFO, "--------- Begin USB Event Monitoring -----------");
 
     mon = udev_monitor_new_from_netlink(udev, "udev");
     if(!mon)
@@ -130,29 +160,44 @@ int main(int argc, char **argv) {
     while(1) {
         FD_ZERO(&fds);
         FD_SET(fd, &fds);
+        ti.tv_sec = 10;
+        ti.tv_usec = 0;
 
-        ret = select(fd + 1, &fds, NULL, NULL, NULL);
-        if(ret <= 0)
+        ret = select(fd + 1, &fds, NULL, NULL, &ti);
+        if(ret < 0) 
             break;
-
+            
         if(FD_ISSET(fd, &fds)) {
             dev = udev_monitor_receive_device(mon);
             if(dev && strcmp(udev_device_get_devtype(dev), "usb_device") == 0) {
-                usbpath = strstr(udev_device_get_devpath(dev), "usb");
-                vendor = udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
-                serial = udev_device_get_property_value(dev, "ID_SERIAL");
-                speed = udev_device_get_sysattr_value(dev, "speed");
-                action = udev_device_get_action(dev),
-                logmsg(INFO, "%6s %s %s %s %s",
-                    (action) ? action : "N/A",
-                    (usbpath) ? usbpath : "N/A",
-                    (vendor) ? vendor : "N/A",
-                    (serial) ? serial : "N/A",
-                    (speed) ? speed : "N/A"
-                );
+                if(co) {
+                    if(strcmp(udev_device_get_action(dev), "add")==0) {
+                        cv.adds++;
+                        cv.connected++;       
+                    } else if (strcmp(udev_device_get_action(dev), "remove")==0) {
+                        cv.removes++;
+                        cv.connected--;
+                    }
+                } else {
+                    usbpath = strstr(udev_device_get_devpath(dev), "usb");
+                    vendor = udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
+                    serial = udev_device_get_property_value(dev, "ID_SERIAL");
+                    speed = udev_device_get_sysattr_value(dev, "speed");
+                    action = udev_device_get_action(dev);
+                    logmsg(INFO, "%6s %s %s %s %s",
+                        (action) ? action : "N/A",
+                        (usbpath) ? usbpath : "N/A",
+                        (vendor) ? vendor : "N/A",
+                        (serial) ? serial : "N/A",
+                        (speed) ? speed : "N/A"
+                    );
+                }
                 udev_device_unref(dev);
             }
         }
+
+        if(co)
+            putval(&cv);
     }
     udev_unref(udev);
     return 0;
