@@ -32,8 +32,7 @@ struct collectd {
     uint32_t removes;
 };
 
-char host[256];
-char fqdn[1024];
+char hostname[1024];
 
 int isopt(int argc, char **argv, const char *opt) {
     for(int i = 1; i < argc && strcmp(argv[i], opt) == 0; ++i)
@@ -61,7 +60,7 @@ void logmsg(int state, char *msg, ...) {
     printf("%04d/%02d/%02d %02d:%02d:%02d %s:%s ",
         l->tm_year + 1900, l->tm_mon + 1, l->tm_mday,
         l->tm_hour, l->tm_min, l->tm_sec,
-        host, err[state]
+        hostname, err[state]
     );
     va_start(ap, msg);
     vprintf(msg, ap);
@@ -75,7 +74,7 @@ void logmsg(int state, char *msg, ...) {
 }
 
 void putval(struct collectd *cv) {
-    printf("PUTVAL %s/usb/udev N:%.0f:%u:%u\n", fqdn, cv->connected, cv->adds, cv->removes);
+    printf("PUTVAL %s/usbmon/usb_connections N:%.0f:%u:%u\n", hostname, cv->connected, cv->adds, cv->removes);
     fflush(stdout);
 }
 
@@ -105,8 +104,7 @@ int main(int argc, char **argv) {
         
     memset(&cv, 0, sizeof(struct collectd));
     uname(&u);
-    snprintf(host, sizeof(host), "%s", u.nodename);
-    snprintf(fqdn, sizeof(fqdn), "%s.%s", u.nodename, u.__domainname);
+    strncpy(hostname, u.nodename, sizeof(hostname));
             
     udev = udev_new();
     if(!udev)
