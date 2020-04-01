@@ -74,7 +74,7 @@ void logmsg(int state, char *msg, ...) {
 }
 
 void putval(struct collectd *cv) {
-    printf("PUTVAL %s/usbmon/usb_connections N:%.0f:%u:%u\n", hostname, cv->connected, cv->adds, cv->removes);
+    printf("PUTVAL %s/usbmon/usb_devices N:%.0f:%u:%u\n", hostname, cv->connected, cv->adds, cv->removes);
     fflush(stdout);
 }
 
