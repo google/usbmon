@@ -24,7 +24,7 @@
 #include <limits.h>
 #include <sys/utsname.h>
 #include <libudev.h>
-
+#include <argp.h>
 
 struct collectd {
     double connected;
@@ -34,11 +34,55 @@ struct collectd {
 
 char hostname[1024];
 
-int isopt(int argc, char **argv, const char *opt) {
-    for(int i = 1; i < argc && strcmp(argv[i], opt) == 0; ++i)
-        return 1;	//opt option has been inputted.
-    return 0;
+//messages for struct argp
+const char *argp_program_version = "usbmon 0.1";
+const char *argp_program_bug_version = "github/google/usbmon/";
+static char doc[] = "A tool to enumerate, list and monitor USB devices connected to a Linux host";
+static char args_doc[] = "";
+
+//key short-options flags docs
+static struct argp_option options[] =
+{
+{ "nomon",'n',0,0,"Do not monitor events"},
+{ "cltdplg",'c',0,0,"collectd exec plugin mode"},
+{0},//skip filename argument in help message
+};
+
+//store values parsed argp_parse
+struct arguments
+{
+    char *argv[1];
+    int nomon,cltdplg;
+};
+
+//argp parser ,parse each key
+static error_t parse_opt (int key,char *arg,struct argp_state *state)
+{
+    struct arguments *arguments = state->input;
+
+    switch(key)
+    {
+        case 'n':
+            arguments->nomon = 1;
+            break;
+        case 'c':
+            arguments->cltdplg = 1;
+            break;
+        case ARGP_KEY_ARG:
+            if(state->arg_num > 1)
+            {
+                    argp_usage(state); //too many arguments
+            }
+            arguments->argv[state->arg_num] = arg;
+            break;
+        default:
+            return ARGP_ERR_UNKNOWN;
+    }
+    return 0; // return 0 to enusre no error has occured : imp
 }
+
+//argp parser
+static struct argp argp = {options,parse_opt,args_doc,doc};
 
 enum { INFO, WARNING, ERROR };
 
@@ -47,16 +91,16 @@ void logmsg(int state, char *msg, ...) {
     time_t t;
     struct tm *l;
     char *err[] = { "", " WARNING:", " ERROR:" };
-    
+
     time(&t);
     l = localtime(&t);
-    
-    if(state > 2) 
+
+    if(state > 2)
         state = 2;
-    if(state < 0) 
+    if(state < 0)
         state = 0;
     fflush(stdout);
-    
+
     printf("%04d/%02d/%02d %02d:%02d:%02d %s:%s ",
         l->tm_year + 1900, l->tm_mon + 1, l->tm_mday,
         l->tm_hour, l->tm_min, l->tm_sec,
@@ -88,25 +132,30 @@ int main(int argc, char **argv) {
     struct timeval ti;
     struct collectd cv;
     struct utsname u;
+    struct arguments arguments;
     const char *path, *usbpath, *vendor, *serial, *speed, *action;
     int fd, ret, co = 0;
     fd_set fds;
 
-    if(isopt(argc, argv, "--help") || isopt(argc, argv, "-h")){
-        printf("usbmon [-h|--help][-n][-c] \n\t-h|--help (optional) help\n" \
-        "\t-n        (optional) do not monitor events\n" \
-        "\t-c        (optional) collectd exec plugin mode\n");
-        return 0;
+    //reset flags in arguments struct
+    arguments.nomon = 0;
+    arguments.cltdplg = 0;
+    //parse all arguments and initialise variables
+    argp_parse(&argp,argc,argv,0,0,&arguments);
+    //set flags
+    if(arguments.cltdplg)
+      co = 1; // collectd plugin mode
+    if(arguments.cltdplg && arguments.nomon) //if both options are specified ex : -cn or -nc
+    {
+        //defualt behaviour
+        co = 0;
+        arguments.nomon = 0;
     }
-
-    if(isopt(argc, argv, "-c")) 
-        co = 1; // collectd plugin mode
-        
     memset(&cv, 0, sizeof(struct collectd));
     memset(&u, 0, sizeof(struct utsname));
     uname(&u);
     strncpy(hostname, u.nodename, sizeof(hostname));
-            
+
     udev = udev_new();
     if(!udev)
         logmsg(ERROR, "udev_new() failed\n");
@@ -114,7 +163,7 @@ int main(int argc, char **argv) {
     enu = udev_enumerate_new(udev);
     if(!enu)
         logmsg(ERROR, "udev_enumerate_new() failed\n");
-        
+
     udev_enumerate_add_match_subsystem(enu, "usb");
     udev_enumerate_scan_devices(enu);
 
@@ -143,7 +192,7 @@ int main(int argc, char **argv) {
     }
     udev_enumerate_unref(enu);
 
-    if(isopt(argc, argv, "-n"))
+    if(arguments.nomon)
        return 0;
 
     if(!co)
@@ -164,16 +213,16 @@ int main(int argc, char **argv) {
         ti.tv_usec = 0;
 
         ret = select(fd + 1, &fds, NULL, NULL, &ti);
-        if(ret < 0) 
+        if(ret < 0)
             break;
-            
+
         if(FD_ISSET(fd, &fds)) {
             dev = udev_monitor_receive_device(mon);
             if(dev && strcmp(udev_device_get_devtype(dev), "usb_device") == 0) {
                 if(co) {
                     if(strcmp(udev_device_get_action(dev), "add")==0) {
                         cv.adds++;
-                        cv.connected++;       
+                        cv.connected++;
                     } else if (strcmp(udev_device_get_action(dev), "remove")==0) {
                         cv.removes++;
                         cv.connected--;
@@ -196,7 +245,7 @@ int main(int argc, char **argv) {
                 udev_device_unref(dev);
             }
         }
-        
+
         // TODO(tenox): add output throttling
         if(co)
             putval(&cv);
