@@ -2,7 +2,7 @@
 A tool to enumerate, list and monitor USB devices connected to a Linux host.
 
 Print out a list of connected devices with USB path, vendor, make, model, serial and connection speed. 
-Monitoring for udev events such as connect or disconnect and print them with a timestamp. 
+Monitor udev events such as connect or disconnect and print them with a timestamp. 
 
 New: Experimental collectd plugin mode.
 
