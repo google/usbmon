@@ -103,6 +103,7 @@ int main(int argc, char **argv) {
         co = 1; // collectd plugin mode
         
     memset(&cv, 0, sizeof(struct collectd));
+    memset(&u, 0, sizeof(struct utsname));
     uname(&u);
     strncpy(hostname, u.nodename, sizeof(hostname));
             
@@ -159,7 +160,7 @@ int main(int argc, char **argv) {
     while(1) {
         FD_ZERO(&fds);
         FD_SET(fd, &fds);
-        ti.tv_sec = 10;
+        ti.tv_sec = 10; // TODO(tenox): make this in to a flag
         ti.tv_usec = 0;
 
         ret = select(fd + 1, &fds, NULL, NULL, &ti);
@@ -195,7 +196,8 @@ int main(int argc, char **argv) {
                 udev_device_unref(dev);
             }
         }
-
+        
+        // TODO(tenox): add output throttling
         if(co)
             putval(&cv);
     }
