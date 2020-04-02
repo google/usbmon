@@ -24,7 +24,7 @@
 #include <limits.h>
 #include <sys/utsname.h>
 #include <libudev.h>
-
+#include <getopt.h>
 
 struct collectd {
     double connected;
@@ -34,11 +34,13 @@ struct collectd {
 
 char hostname[1024];
 
-int isopt(int argc, char **argv, const char *opt) {
-    for(int i = 1; i < argc && strcmp(argv[i], opt) == 0; ++i)
-        return 1;	//opt option has been inputted.
-    return 0;
-}
+static struct option options[] = 
+{
+    {"help", no_argument, 0, 'h'},
+    {"", no_argument, 0, 'n'},
+    {"", no_argument, 0, 'c'},
+    {0, 0, 0, 0}
+};
 
 enum { INFO, WARNING, ERROR };
 
@@ -78,6 +80,12 @@ void putval(struct collectd *cv) {
     fflush(stdout);
 }
 
+void printhelp() {
+    printf("usbmon [-n][-c]\n" \
+    "  -n do not monitor events\n" \
+    "  -c collectd exec plugin mode\n");
+}
+
 int main(int argc, char **argv) {
     struct udev *udev;
     struct udev_enumerate *enu;
@@ -89,18 +97,28 @@ int main(int argc, char **argv) {
     struct collectd cv;
     struct utsname u;
     const char *path, *usbpath, *vendor, *serial, *speed, *action;
-    int fd, ret, co = 0;
+    int fd, ret, co = 0, no_mon = 0, c, optidx = 0;
     fd_set fds;
 
-    if(isopt(argc, argv, "--help") || isopt(argc, argv, "-h")){
-        printf("usbmon [-n][-c]\n" \
-        "  -n do not monitor events\n" \
-        "  -c collectd exec plugin mode\n");
-        return 0;
-    }
+    while(1) {
+        c = getopt_long(argc, argv, "nch", options, &optidx);
+        if(c == -1)
+            break;
 
-    if(isopt(argc, argv, "-c")) 
-        co = 1; // collectd plugin mode
+        switch(c)
+        {
+            case 0:
+            case 'h':
+                printhelp();
+                return 0;
+            case 'n':
+                no_mon = 1;
+                break;
+            case 'c':
+                co = 1;
+                break;            
+        }
+    }
         
     memset(&cv, 0, sizeof(struct collectd));
     memset(&u, 0, sizeof(struct utsname));
@@ -143,7 +161,7 @@ int main(int argc, char **argv) {
     }
     udev_enumerate_unref(enu);
 
-    if(isopt(argc, argv, "-n"))
+    if(no_mon)
        return 0;
 
     if(!co)
