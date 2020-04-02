@@ -15,8 +15,8 @@ requires `libudev-dev`
 
 ```
 usbmon [-n][-c]
-        -n do not monitor events
-        -c collectd exec plugin mode
+  -n do not monitor events
+  -c collectd exec plugin mode
 ```
 
 ### Experimental collectd plugin mode
