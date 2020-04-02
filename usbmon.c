@@ -93,9 +93,9 @@ int main(int argc, char **argv) {
     fd_set fds;
 
     if(isopt(argc, argv, "--help") || isopt(argc, argv, "-h")){
-        printf("usbmon [-h|--help][-n][-c] \n\t-h|--help (optional) help\n" \
-        "\t-n        (optional) do not monitor events\n" \
-        "\t-c        (optional) collectd exec plugin mode\n");
+        printf("usbmon [-n][-c]\n" \
+        "  -n do not monitor events\n" \
+        "  -c collectd exec plugin mode\n");
         return 0;
     }
 
