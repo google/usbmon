@@ -14,10 +14,9 @@ requires `libudev-dev`
 ### Flags
 
 ```
-usbmon [-h|--help][-n][-c]
-        -h|--help (optional) help
-        -n        (optional) do not monitor events
-        -c        (optional) collectd exec plugin mode
+usbmon [-n][-c]
+        -n do not monitor events
+        -c collectd exec plugin mode
 ```
 
 ### Experimental collectd plugin mode
