@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
     struct collectd cv;
     struct utsname u;
     const char *path, *usbpath, *vendor, *serial, *speed, *action;
-    int fd, ret, co = 0, nomon = 0, opt;
+    int fd, ret, co = 0, nomon = 0, opt, tv_sec = 10;
     fd_set fds;
 
     while((opt = getopt(argc,argv,"ncht:")) != -1) {
@@ -105,6 +105,10 @@ int main(int argc, char **argv) {
         case 'h':
           printhelp();
           return 0;
+
+        case 't':
+          tv_sec = atoi(optarg);
+          break;
 
         default:
           printhelp();
@@ -170,7 +174,7 @@ int main(int argc, char **argv) {
     while(1) {
         FD_ZERO(&fds);
         FD_SET(fd, &fds);
-        ti.tv_sec = 10; // TODO(tenox): make this in to a flag
+        ti.tv_sec = tv_sec; // TODO(tenox): make this in to a flag (done)
         ti.tv_usec = 0;
 
         ret = select(fd + 1, &fds, NULL, NULL, &ti);
