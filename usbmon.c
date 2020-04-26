@@ -36,7 +36,7 @@ char hostname[1024];
 
 enum { INFO, WARNING, ERROR };
 
-void printhelp(void) {
+void usage() {
   printf("usbmon [-h|--help][-n][-c][-t tv_sec] \n\t-h|--help (optional) help\n" \
     "\t-n        (optional) do not monitor events\n" \
     "\t-c        (optional) collectd exec plugin mode\n" \
@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
           break;
 
         case 'h':
-          printhelp();
+          usage();
           return 0;
 
         case 't':
@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
           break;
 
         default:
-          printhelp();
+          usage();
           return 0;
       }
     }
