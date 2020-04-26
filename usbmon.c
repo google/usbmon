@@ -37,7 +37,7 @@ char hostname[1024];
 enum { INFO, WARNING, ERROR };
 
 void usage() {
-  printf("usbmon [-h|--help][-n][-c][-t tv_sec] \n\t-h|--help (optional) help\n" \
+  printf("usbmon [-h|--help][-n | -c][-t <secs>] \n\t-h|--help (optional) help\n" \
     "\t-n        (optional) do not monitor events\n" \
     "\t-c        (optional) collectd exec plugin mode\n" \
     "\t-t=SECS   (optional) set time interval for monitoring default:10\n");
@@ -117,6 +117,10 @@ int main(int argc, char **argv) {
       }
     }
 
+    if(nomon && co) {
+      printf("%s : options -n and -c cannot be used together\n",argv[0]);
+      usage();
+    }
     memset(&cv, 0, sizeof(struct collectd));
     memset(&u, 0, sizeof(struct utsname));
     uname(&u);
