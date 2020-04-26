@@ -17,7 +17,7 @@ requires `libudev-dev`
 usbmon [-n][-c]
   -n do not monitor events
   -c collectd exec plugin mode
-  -t=TV_SEC set time interval for monitoring default:10
+  -t=SECS set time interval for monitoring default:10
 ```
 
 ### Experimental collectd plugin mode

@@ -39,8 +39,8 @@ enum { INFO, WARNING, ERROR };
 void printhelp(void) {
   printf("usbmon [-h|--help][-n][-c][-t tv_sec] \n\t-h|--help (optional) help\n" \
     "\t-n        (optional) do not monitor events\n" \
-    "\t-c        (optional) collectd exec plugin mode\n"\
-    "\t-t=TV_SEC (optional) set time interval for monitoring\n");
+    "\t-c        (optional) collectd exec plugin mode\n" \
+    "\t-t=SECS   (optional) set time interval for monitoring default:10\n");
 }
 
 void logmsg(int state, char *msg, ...) {
