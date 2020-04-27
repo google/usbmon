@@ -74,8 +74,8 @@ void logmsg(int state, char *msg, ...) {
         exit(1);
 }
 
-void putval(struct collectd *cv) {
-    printf("PUTVAL %s/usbmon/usb_devices N:%.0f:%u:%u\n", hostname, cv->connected, cv->adds, cv->removes);
+void putval(struct collectd *cv, int interval) {
+    printf("PUTVAL %s/usbmon/usb_devices interval=%d N:%.0f:%u:%u\n", hostname, interval, cv->connected, cv->adds, cv->removes);
     fflush(stdout);
 }
 
@@ -218,7 +218,7 @@ int main(int argc, char **argv) {
 
         // TODO(tenox): add output throttling
         if(co)
-            putval(&cv);
+            putval(&cv, interval);
     }
     udev_unref(udev);
     return 0;
