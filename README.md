@@ -34,7 +34,7 @@ Create exec plugin config file, `/etc/collectd/collectd.conf.d/usbmon.conf`:
 ```
 LoadPlugin Exec
 <Plugin exec>
-  Exec "nobody" "/var/lib/collectd/plugins/usbmon" "-c"
+  Exec "nobody" "/var/lib/collectd/plugins/usbmon" "-c" "-t=<secs>"
 </Plugin>
 ```
 
