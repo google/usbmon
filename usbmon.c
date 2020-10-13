@@ -25,6 +25,12 @@
 #include <sys/utsname.h>
 #include <libudev.h>
 
+/*====================================================================
+ * Local Function Prototypes
+ *====================================================================*/
+void logmsg(int state, char *msg, ...);
+void logdev(const char *path, struct udev_device *dev);
+void usage();
 
 struct collectd {
     double connected;
@@ -35,7 +41,12 @@ struct collectd {
 char hostname[1024];
 
 enum { INFO, WARNING, ERROR };
-
+/*=========================================================================
+ * Description:  Print help information to stdout
+ *
+ * input:		 none
+ * return:       none
+ *=========================================================================*/
 void usage() {
   printf("usbmon [-h|--help][-n | -c][-t <secs>] \n\t-h|--help (optional) help\n" \
     "\t-n        (optional) do not monitor events\n" \
@@ -43,6 +54,35 @@ void usage() {
     "\t-t=SECS   (optional) set time interval for monitoring default:10\n");
 }
 
+/*=========================================================================
+ * Description:  Print the usb information to stdout
+ *
+ * input:		 path  USB device path
+ *               dev   udev device object
+ * return:       none
+ *=========================================================================*/
+void logdev(const char *path, struct udev_device *dev) {
+
+	const char *usbpath, *vendor, *serial, *speed;
+
+    usbpath = strstr(udev_device_get_devpath(dev), "usb");
+    vendor = udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
+    serial = udev_device_get_property_value(dev, "ID_SERIAL");
+    speed = udev_device_get_sysattr_value(dev, "speed");
+    logmsg(INFO, "%6s %s %s %s",
+    		(usbpath) ? usbpath : "N/A",
+    		(vendor) ? vendor : "N/A",
+            (serial) ? serial : "N/A",
+            (speed) ? speed : "N/A"
+    );
+}
+/*=========================================================================
+ * Description:  Print a log message to stdout
+ *
+ * input:		 path  USB device path
+ *               dev   udev device object
+ * return:       none
+ *=========================================================================*/
 void logmsg(int state, char *msg, ...) {
     va_list ap;
     time_t t;
@@ -73,7 +113,13 @@ void logmsg(int state, char *msg, ...) {
     if(state == ERROR)
         exit(1);
 }
-
+/*=========================================================================
+ * Description:  Print log message to stdout
+ *
+ * input:		 path  USB device path
+ *               dev   udev device object
+ * return:       none
+ *=========================================================================*/
 void putval(struct collectd *cv, int interval) {
     printf("PUTVAL %s/usbmon/usb_devices interval=%d N:%.0f:%u:%u\n", hostname, interval, cv->connected, cv->adds, cv->removes);
     fflush(stdout);
@@ -89,52 +135,69 @@ int main(int argc, char **argv) {
     struct timeval ti;
     struct collectd cv;
     struct utsname u;
-    const char *path, *usbpath, *vendor, *serial, *speed, *action;
+    const char *path = NULL;
     int fd, ret, co = 0, nomon = 0, opt, interval = 10;
     fd_set fds;
 
     while((opt = getopt(argc,argv,"ncht:")) != -1) {
-      switch (opt) {
-        case 'n':
-          nomon = 1;
-          break;
+    	switch (opt) {
+            /*---------------------------------------------------------------
+             * Print out the usb device tree then exit
+             *-------------------------------------------------------------------*/
+          	case 'n':
+              nomon = 1;
+              break;
+            /*---------------------------------------------------------------
+             * Run under COLLECTD.  Monitor USB device events and pass them via PUTVAR
+             *-------------------------------------------------------------------*/
+            case 'c':
+              co = 1;
+              break;
+            /*---------------------------------------------------------------
+             * Interval for polling for USB events.  Default: 10 Seconds.
+             *-------------------------------------------------------------------*/
+            case 't':
+              interval = atoi(optarg);
+              break;
 
-        case 'c':
-          co = 1;
-          break;
-
-        case 'h':
+            default:
+              usage();
+              return 0;
+          }
+        }
+        /*-----------------------------------------------------------------------------------
+         * Error in supplied options.  If running under commandd, the program must monitor
+         *----------------------------------------------------------------------------------*/
+        if(nomon && co) {
+          logmsg(ERROR, "-c means running under collectd, ignoring nomon");
           usage();
-          return 0;
+        }
+        /*-------------------------------------------------------------------------------------
+         * Get the posix system name
+         *------------------------------------------------------------------------------------*/
+        uname(&u);
+        strncpy(hostname, u.nodename, sizeof(hostname));
+        /*--------------------------------------------------------------------------------------
+         * Create a UDEV object
+         *--------------------------------------------------------------------------------------*/
+        udev = udev_new();
+        if(!udev) {
+            logmsg(ERROR, "udev_new() failed\n");
+            return(-1);
+        }
+        /*--------------------------------------------------------------------------------------
+         *  Create a list of USB devices
+         *-------------------------------------------------------------------------------------*/
+        enu = udev_enumerate_new(udev);
+        if(!enu) {
+            logmsg(ERROR, "udev_enumerate_new() failed\n");
+            return(-1);
+        }
+    	if (udev_enumerate_add_match_subsystem(enu, "usb") < 0) {
+    		logmsg(ERROR, "udev_enumerate_add_match_subsystem() failed.");
+    		return (-1);
+    	}
 
-        case 't':
-          interval = atoi(optarg);
-          break;
-
-        default:
-          usage();
-          return 0;
-      }
-    }
-
-    if(nomon && co) {
-      printf("%s : options -n and -c cannot be used together\n",argv[0]);
-      usage();
-    }
-    memset(&cv, 0, sizeof(struct collectd));
-    memset(&u, 0, sizeof(struct utsname));
-    uname(&u);
-    strncpy(hostname, u.nodename, sizeof(hostname));
-
-    udev = udev_new();
-    if(!udev)
-        logmsg(ERROR, "udev_new() failed\n");
-
-    enu = udev_enumerate_new(udev);
-    if(!enu)
-        logmsg(ERROR, "udev_enumerate_new() failed\n");
-
-    udev_enumerate_add_match_subsystem(enu, "usb");
     udev_enumerate_scan_devices(enu);
 
     lst = udev_enumerate_get_list_entry(enu);
@@ -145,17 +208,7 @@ int main(int argc, char **argv) {
             if(co) {
                 cv.connected++;
             } else {
-            // TODO(tenox): make this to a separate print function
-                usbpath = strstr(udev_device_get_devpath(dev), "usb");
-                vendor = udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
-                serial = udev_device_get_property_value(dev, "ID_SERIAL");
-                speed = udev_device_get_sysattr_value(dev, "speed");
-                printf("%s: %s %s %s\n",
-                    (usbpath) ? usbpath : "N/A",
-                    (vendor) ? vendor : "N/A",
-                    (serial) ? serial : "N/A",
-                    (speed) ? speed : "N/A"
-                );
+               logdev(path, dev);
             }
         }
         udev_device_unref(dev);
@@ -175,7 +228,7 @@ int main(int argc, char **argv) {
     udev_monitor_enable_receiving(mon);
 
     fd = udev_monitor_get_fd(mon);
-
+    path = NULL;
     while(1) {
         FD_ZERO(&fds);
         FD_SET(fd, &fds);
@@ -198,19 +251,8 @@ int main(int argc, char **argv) {
                         cv.connected--;
                     }
                 } else {
-                // TODO(tenox): make this to a separate print function
-                    usbpath = strstr(udev_device_get_devpath(dev), "usb");
-                    vendor = udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
-                    serial = udev_device_get_property_value(dev, "ID_SERIAL");
-                    speed = udev_device_get_sysattr_value(dev, "speed");
-                    action = udev_device_get_action(dev);
-                    logmsg(INFO, "%6s %s %s %s %s",
-                        (action) ? action : "N/A",
-                        (usbpath) ? usbpath : "N/A",
-                        (vendor) ? vendor : "N/A",
-                        (serial) ? serial : "N/A",
-                        (speed) ? speed : "N/A"
-                    );
+                    logdev(path, dev);
+
                 }
                 udev_device_unref(dev);
             }
