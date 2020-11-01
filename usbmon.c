@@ -120,6 +120,7 @@ int main(int argc, char **argv) {
     if(nomon && co) {
       printf("%s : options -n and -c cannot be used together\n",argv[0]);
       usage();
+      return 0;
     }
     memset(&cv, 0, sizeof(struct collectd));
     memset(&u, 0, sizeof(struct utsname));
