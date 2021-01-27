@@ -180,27 +180,34 @@ void usbmon(int nomon, int colld) {
         if(ret < 0)
             break;
 
-        if(FD_ISSET(fd, &fds)) {
-            dev = udev_monitor_receive_device(mon);
-            if(dev && strcmp(udev_device_get_devtype(dev), "usb_device") == 0) {
-                if(colld) {
-                    if(strcmp(udev_device_get_action(dev), "add")==0) {
-                        cv.adds++;
-                        cv.connected++;
-                    } else if (strcmp(udev_device_get_action(dev), "remove")==0) {
-                        cv.removes++;
-                        cv.connected--;
-                    }
-                } else {
-                    devmsg(dev, LOG);
-                }
-                udev_device_unref(dev);
-            }
+        if(!FD_ISSET(fd, &fds))
+            continue;
+
+        dev = udev_monitor_receive_device(mon);
+        if(!dev)
+            continue;
+
+        if(strcmp(udev_device_get_devtype(dev), "usb_device") != 0) {
+            udev_device_unref(dev);
+            continue;
         }
 
-        // TODO(tenox): add output throttling
-        if(colld)
+        if(colld) {
+            if(strcmp(udev_device_get_action(dev), "add")==0) {
+                cv.adds++;
+                cv.connected++;
+            } else if (strcmp(udev_device_get_action(dev), "remove")==0) {
+                cv.removes++;
+                cv.connected--;
+            }
+            // TODO(tenox): add output throttling
             putval(&cv);
+            udev_device_unref(dev);
+            continue;
+        }
+
+        devmsg(dev, LOG);
+        udev_device_unref(dev);
     }
     udev_unref(udev);
 
