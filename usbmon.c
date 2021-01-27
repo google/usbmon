@@ -49,16 +49,16 @@ void logmsg(int state, char *msg, ...) {
     time_t t;
     struct tm *l;
     char *err[] = { "", " WARNING:", " ERROR:" };
-    
+
     time(&t);
     l = localtime(&t);
-    
-    if(state > 2) 
+
+    if(state > 2)
         state = 2;
-    if(state < 0) 
+    if(state < 0)
         state = 0;
     fflush(stdout);
-    
+
     printf("%04d/%02d/%02d %02d:%02d:%02d %s:%s ",
         l->tm_year + 1900, l->tm_mon + 1, l->tm_mday,
         l->tm_hour, l->tm_min, l->tm_sec,
@@ -76,7 +76,8 @@ void logmsg(int state, char *msg, ...) {
 }
 
 void putval(struct collectd *cv) {
-    printf("PUTVAL %s/usbmon/usb_devices N:%.0f:%u:%u\n", hostname, cv->connected, cv->adds, cv->removes);
+    printf("PUTVAL %s/usbmon/usb_devices N:%.0f:%u:%u\n", 
+        hostname, cv->connected, cv->adds, cv->removes);
     fflush(stdout);
 }
 
@@ -86,7 +87,7 @@ void usage() {
     "  -c collectd exec plugin mode\n");
 }
 
-int main(int argc, char **argv) {
+void usbmon(int nomon, int colld) {
     struct udev *udev;
     struct udev_enumerate *enu;
     struct udev_monitor *mon;
@@ -95,36 +96,12 @@ int main(int argc, char **argv) {
     struct udev_list_entry *entr = NULL;
     struct timeval ti;
     struct collectd cv;
-    struct utsname u;
     const char *path, *usbpath, *vendor, *serial, *speed, *action;
-    int fd, ret, co = 0, no_mon = 0, c, optidx = 0;
+    int fd, ret;
     fd_set fds;
 
-    while(1) {
-        c = getopt_long(argc, argv, "nch", options, &optidx);
-        if(c == -1)
-            break;
-
-        switch(c)
-        {
-            case 0:
-            case 'h':
-                usage();
-                return 0;
-            case 'n':
-                no_mon = 1;
-                break;
-            case 'c':
-                co = 1;
-                break;            
-        }
-    }
-        
     memset(&cv, 0, sizeof(struct collectd));
-    memset(&u, 0, sizeof(struct utsname));
-    uname(&u);
-    strncpy(hostname, u.nodename, sizeof(hostname));
-            
+
     udev = udev_new();
     if(!udev)
         logmsg(ERROR, "udev_new() failed\n");
@@ -132,7 +109,7 @@ int main(int argc, char **argv) {
     enu = udev_enumerate_new(udev);
     if(!enu)
         logmsg(ERROR, "udev_enumerate_new() failed\n");
-        
+
     udev_enumerate_add_match_subsystem(enu, "usb");
     udev_enumerate_scan_devices(enu);
 
@@ -141,7 +118,7 @@ int main(int argc, char **argv) {
         path = udev_list_entry_get_name(entr);
         dev = udev_device_new_from_syspath(udev, path);
         if(dev && strcmp(udev_device_get_devtype(dev), "usb_device") == 0) {
-            if(co) {
+            if(colld) {
                 cv.connected++;
             } else {
             // TODO(tenox): make this to a separate print function
@@ -161,10 +138,10 @@ int main(int argc, char **argv) {
     }
     udev_enumerate_unref(enu);
 
-    if(no_mon)
-       return 0;
+    if(nomon)
+       return;
 
-    if(!co)
+    if(!colld)
         logmsg(INFO, "--------- Begin USB Event Monitoring -----------");
 
     mon = udev_monitor_new_from_netlink(udev, "udev");
@@ -182,16 +159,16 @@ int main(int argc, char **argv) {
         ti.tv_usec = 0;
 
         ret = select(fd + 1, &fds, NULL, NULL, &ti);
-        if(ret < 0) 
+        if(ret < 0)
             break;
-            
+
         if(FD_ISSET(fd, &fds)) {
             dev = udev_monitor_receive_device(mon);
             if(dev && strcmp(udev_device_get_devtype(dev), "usb_device") == 0) {
-                if(co) {
+                if(colld) {
                     if(strcmp(udev_device_get_action(dev), "add")==0) {
                         cv.adds++;
-                        cv.connected++;       
+                        cv.connected++;
                     } else if (strcmp(udev_device_get_action(dev), "remove")==0) {
                         cv.removes++;
                         cv.connected--;
@@ -214,11 +191,49 @@ int main(int argc, char **argv) {
                 udev_device_unref(dev);
             }
         }
-        
+
         // TODO(tenox): add output throttling
-        if(co)
+        if(colld)
             putval(&cv);
     }
     udev_unref(udev);
+
+    return;
+}
+
+int main(int argc, char **argv) {
+    struct utsname u;
+    int colld = 0, nomon = 0, c, optidx = 0;
+
+    memset(&u, 0, sizeof(struct utsname));
+    uname(&u);
+    strncpy(hostname, u.nodename, sizeof(hostname));
+
+    while(1) {
+        c = getopt_long(argc, argv, "nch", options, &optidx);
+        if(c == -1)
+            break;
+
+        switch(c) {
+            case 0:
+            case 'h':
+                usage();
+                return 0;
+            case 'n':
+                nomon = 1;
+                break;
+            case 'c':
+                colld = 1;
+                break;
+        }
+    }
+
+    if(colld && nomon) {
+        logmsg(ERROR, "-c and -n cannot be used together");
+        usage();
+    }
+
+    usbmon(nomon, colld);
+
     return 0;
 }
