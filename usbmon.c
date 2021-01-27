@@ -27,13 +27,13 @@
 #include <libudev.h>
 #include <getopt.h>
 
+char hostname[1024];
+
 struct collectd {
     double connected;
     uint32_t adds;
     uint32_t removes;
 };
-
-char hostname[1024];
 
 static struct option options[] = {
     {"help", no_argument, 0, 'h'},
@@ -54,11 +54,10 @@ void logmsg(int state, char *msg, ...) {
     time(&t);
     l = localtime(&t);
 
-    if(state > 2)
-        state = 2;
-    if(state < 0)
-        state = 0;
-    fflush(stdout);
+    if(state > ERROR)
+        state = ERROR;
+    if(state < INFO)
+        state = INFO;
 
     printf("%04d/%02d/%02d %02d:%02d:%02d %s:%s ",
         l->tm_year + 1900, l->tm_mon + 1, l->tm_mday,
@@ -236,8 +235,8 @@ int main(int argc, char **argv) {
     }
 
     if(colld && nomon) {
-        logmsg(ERROR, "-c and -n cannot be used together");
         usage();
+        logmsg(ERROR, "-c and -n cannot be used together");
     }
 
     usbmon(nomon, colld);
