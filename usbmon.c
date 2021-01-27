@@ -126,7 +126,7 @@ void usbmon(int nomon, int colld) {
                 vendor = udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
                 serial = udev_device_get_property_value(dev, "ID_SERIAL");
                 speed = udev_device_get_sysattr_value(dev, "speed");
-                printf("%s: %s %s %s\n",
+                printf("%s: %s %s %s Mbps\n",
                     (usbpath) ? usbpath : "N/A",
                     (vendor) ? vendor : "N/A",
                     (serial) ? serial : "N/A",
@@ -180,7 +180,7 @@ void usbmon(int nomon, int colld) {
                     serial = udev_device_get_property_value(dev, "ID_SERIAL");
                     speed = udev_device_get_sysattr_value(dev, "speed");
                     action = udev_device_get_action(dev);
-                    logmsg(INFO, "%6s %s %s %s %s",
+                    logmsg(INFO, "%6s %s %s %s %s Mbps",
                         (action) ? action : "N/A",
                         (usbpath) ? usbpath : "N/A",
                         (vendor) ? vendor : "N/A",
