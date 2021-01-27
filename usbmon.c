@@ -43,6 +43,7 @@ static struct option options[] = {
 };
 
 enum { INFO, WARNING, ERROR };
+enum { NOLOG, LOG };
 
 void logmsg(int state, char *msg, ...) {
     va_list ap;
@@ -87,6 +88,34 @@ void usage() {
     "  -c collectd exec plugin mode\n");
 }
 
+void devmsg(struct udev_device *dev, int log) {
+    const char *usbpath, *vendor, *serial, *speed, *action;
+
+    action = udev_device_get_action(dev);
+    usbpath = strstr(udev_device_get_devpath(dev), "usb");
+    vendor = udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
+    serial = udev_device_get_property_value(dev, "ID_SERIAL");
+    speed = udev_device_get_sysattr_value(dev, "speed");
+
+    if(log) {
+        logmsg(INFO, "%6s %s %s %s %s Mbps",
+            (action) ? action : "N/A",
+            (usbpath) ? usbpath : "N/A",
+            (vendor) ? vendor : "N/A",
+            (serial) ? serial : "N/A",
+            (speed) ? speed : "N/A"
+        );
+        return;
+    }
+
+    printf("%s %s %s %s Mbps\n",
+        (usbpath) ? usbpath : "N/A",
+        (vendor) ? vendor : "N/A",
+        (serial) ? serial : "N/A",
+        (speed) ? speed : "N/A"
+    );
+}
+
 void usbmon(int nomon, int colld) {
     struct udev *udev;
     struct udev_enumerate *enu;
@@ -96,7 +125,7 @@ void usbmon(int nomon, int colld) {
     struct udev_list_entry *entr = NULL;
     struct timeval ti;
     struct collectd cv;
-    const char *path, *usbpath, *vendor, *serial, *speed, *action;
+    const char *path;
     int fd, ret;
     fd_set fds;
 
@@ -121,17 +150,7 @@ void usbmon(int nomon, int colld) {
             if(colld) {
                 cv.connected++;
             } else {
-            // TODO(tenox): make this to a separate print function
-                usbpath = strstr(udev_device_get_devpath(dev), "usb");
-                vendor = udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
-                serial = udev_device_get_property_value(dev, "ID_SERIAL");
-                speed = udev_device_get_sysattr_value(dev, "speed");
-                printf("%s: %s %s %s Mbps\n",
-                    (usbpath) ? usbpath : "N/A",
-                    (vendor) ? vendor : "N/A",
-                    (serial) ? serial : "N/A",
-                    (speed) ? speed : "N/A"
-                );
+                devmsg(dev, NOLOG);
             }
         }
         udev_device_unref(dev);
@@ -174,19 +193,7 @@ void usbmon(int nomon, int colld) {
                         cv.connected--;
                     }
                 } else {
-                // TODO(tenox): make this to a separate print function
-                    usbpath = strstr(udev_device_get_devpath(dev), "usb");
-                    vendor = udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
-                    serial = udev_device_get_property_value(dev, "ID_SERIAL");
-                    speed = udev_device_get_sysattr_value(dev, "speed");
-                    action = udev_device_get_action(dev);
-                    logmsg(INFO, "%6s %s %s %s %s Mbps",
-                        (action) ? action : "N/A",
-                        (usbpath) ? usbpath : "N/A",
-                        (vendor) ? vendor : "N/A",
-                        (serial) ? serial : "N/A",
-                        (speed) ? speed : "N/A"
-                    );
+                    devmsg(dev, LOG);
                 }
                 udev_device_unref(dev);
             }
