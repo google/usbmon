@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -34,11 +35,10 @@ struct collectd {
 
 char hostname[1024];
 
-static struct option options[] = 
-{
+static struct option options[] = {
     {"help", no_argument, 0, 'h'},
-    {"", no_argument, 0, 'n'},
-    {"", no_argument, 0, 'c'},
+    {"nomon", no_argument, 0, 'n'},
+    {"collectd", no_argument, 0, 'c'},
     {0, 0, 0, 0}
 };
 
@@ -80,7 +80,7 @@ void putval(struct collectd *cv) {
     fflush(stdout);
 }
 
-void printhelp() {
+void usage() {
     printf("usbmon [-n][-c]\n" \
     "  -n do not monitor events\n" \
     "  -c collectd exec plugin mode\n");
@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
         {
             case 0:
             case 'h':
-                printhelp();
+                usage();
                 return 0;
             case 'n':
                 no_mon = 1;
