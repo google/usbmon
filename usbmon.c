@@ -83,7 +83,7 @@ void logmsg(int state, char *msg, ...) {
 }
 
 void putval(struct collectd *cv) {
-    printf("PUTVAL %s/usbmon/usb_devices N:%.0f:%u:%u\n", 
+    printf("PUTVAL %s/usbmon/usb_devices N:%.0f:%u:%u\n",
         hostname, cv->connected, cv->adds, cv->removes);
     fflush(stdout);
 }
@@ -117,13 +117,14 @@ void devmsg(struct udev_device *dev, int log) {
 }
 
 void jsonstream(struct udev_device *dev) {
-    const char *port, *serial, *action;
+    const char *port, *serial, *action, *spd;
     float speed;
 
     action = udev_device_get_action(dev);
     port = udev_device_get_sysname(dev);
     serial = udev_device_get_sysattr_value(dev, "serial");
-    speed = strtof(udev_device_get_sysattr_value(dev, "speed"), NULL);
+    spd = udev_device_get_sysattr_value(dev, "speed");
+    speed = strtof((spd) ? spd : "0", NULL);
 
     if(!port)
         return;
@@ -234,7 +235,7 @@ void usbmon(int output) {
         } else if(output==JSON) {
             jsonstream(dev);
         } else {
-            devmsg(dev, LOG);           
+            devmsg(dev, LOG);
         }
 
         udev_device_unref(dev);
