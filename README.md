@@ -41,7 +41,7 @@ LoadPlugin Exec
 Install usbmon in the plugins directory and restart collectd.
 
 ### JSON Stream mode
-Usbmon can generate a streaming JSON output with per port / device stats.
+Usbmon can generate a streaming JSON output with per port events.
 Streaming JSON is basically a never ending array. To use in Go:
 
 ```
