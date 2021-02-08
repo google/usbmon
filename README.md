@@ -14,10 +14,10 @@ requires `libudev-dev`
 ### Flags
 
 ```
-usbmon [-n][-c]
+usbmon [-n] [-c] [-j]
   -n do not monitor events
   -c collectd exec plugin mode
-  -c json stream mode
+  -j json stream mode
 ```
 
 ### Collectd plugin mode
