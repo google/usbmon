@@ -4,6 +4,7 @@ A tool to enumerate, list and monitor USB devices connected to a Linux host.
 * Print a list of connected devices with USB path, properties and speed
 * Monitor udev events such as connect or disconnect and print them with a timestamp
 * Collectd plugin mode
+* JSON stream mode
 
 ## Requirements
 requires `libudev-dev`
@@ -16,6 +17,7 @@ requires `libudev-dev`
 usbmon [-n][-c]
   -n do not monitor events
   -c collectd exec plugin mode
+  -c json stream mode
 ```
 
 ### Experimental collectd plugin mode
