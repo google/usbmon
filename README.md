@@ -58,7 +58,8 @@ for d.More() {
 ```
 
 ## License
-Apache 2.0
+* Usbmon code is licensed under Apache 2.0
+* Usbmon links with `libudev` which is GPL2.1
 
 ## Disclaimer
 This is not an official Google product.
