@@ -92,7 +92,7 @@ void devmsg(struct udev_device *dev, int log) {
     const char *usbpath, *vendor, *serial, *speed, *action;
 
     action = udev_device_get_action(dev);
-    usbpath = strstr(udev_device_get_devpath(dev), "usb");
+    usbpath = udev_device_get_sysname(dev);
     vendor = udev_device_get_property_value(dev, "ID_VENDOR_FROM_DATABASE");
     serial = udev_device_get_property_value(dev, "ID_SERIAL");
     speed = udev_device_get_sysattr_value(dev, "speed");
