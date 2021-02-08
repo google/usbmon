@@ -20,7 +20,7 @@ usbmon [-n][-c]
   -c json stream mode
 ```
 
-### Experimental collectd plugin mode
+### Collectd plugin mode
 Usbmon can operate as collectd exec plugin.
 
 Add a new type to `/usr/share/collectd/types.db`:
@@ -40,6 +40,22 @@ LoadPlugin Exec
 
 Install usbmon in the plugins directory and restart collectd.
 
+### JSON Stream mode
+Usbmon can generate a streaming JSON output with per port / device stats.
+Streaming JSON is basically a never ending array. To use in Go:
+
+```
+u := exec.Command("usbmon")
+o, _ := u.StdoutPipe()
+u.Start()
+d := json.NewDecoder(o)
+d.Token() // read opening [
+for d.More() {
+	var m msg
+	d.Decode(&m)
+	fmt.Printf("%+v\n", m)
+}
+```
 
 ## License
 Apache 2.0
