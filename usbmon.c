@@ -29,7 +29,8 @@
 
 #define USAGE "usbmon [-n][-c]\n" \
     "  -n do not monitor events\n" \
-    "  -c collectd exec plugin mode\n"
+    "  -c collectd exec plugin mode\n" \
+    "  -j json stream output\n"
 
 char hostname[1024];
 
@@ -43,12 +44,13 @@ static struct option options[] = {
     {"help", no_argument, 0, 'h'},
     {"nomon", no_argument, 0, 'n'},
     {"collectd", no_argument, 0, 'c'},
+    {"json", no_argument, 0, 'j'},
     {0, 0, 0, 0}
 };
 
 enum { INFO, WARNING, ERROR };
 enum { NOLOG, LOG };
-enum { NONE, TEXT, COLLD };
+enum { NONE, TEXT, COLLD, JSON };
 
 void logmsg(int state, char *msg, ...) {
     va_list ap;
@@ -114,6 +116,29 @@ void devmsg(struct udev_device *dev, int log) {
     );
 }
 
+void jsonstream(struct udev_device *dev) {
+    const char *port, *serial, *action;
+    float speed;
+
+    action = udev_device_get_action(dev);
+    port = udev_device_get_sysname(dev);
+    serial = udev_device_get_sysattr_value(dev, "serial");
+    speed = strtof(udev_device_get_sysattr_value(dev, "speed"), NULL);
+
+    if(!port)
+        return;
+
+    printf("{ \"Port\": \"%s\", \"Serial\": \"%s\", \"Event\": \"%s\", \"Speed\": %.1f }, ",
+        port,
+        (serial) ? serial : "N/A",
+        (action) ? action : "enum",
+        speed
+    );
+
+    fflush(stdout);
+}
+
+
 void usbmon(int output) {
     struct udev *udev;
     struct udev_enumerate *enu;
@@ -140,6 +165,9 @@ void usbmon(int output) {
     udev_enumerate_add_match_subsystem(enu, "usb");
     udev_enumerate_scan_devices(enu);
 
+    if(output==JSON)
+        putchar('[');
+
     lst = udev_enumerate_get_list_entry(enu);
     udev_list_entry_foreach(entr, lst) {
         path = udev_list_entry_get_name(entr);
@@ -147,6 +175,8 @@ void usbmon(int output) {
         if(dev && strcmp(udev_device_get_devtype(dev), "usb_device") == 0) {
             if(output==COLLD) {
                 cv.connected++;
+            } else if(output==JSON) {
+                jsonstream(dev);
             } else {
                 devmsg(dev, NOLOG);
             }
@@ -201,11 +231,12 @@ void usbmon(int output) {
             }
             // TODO(tenox): add output throttling
             putval(&cv);
-            udev_device_unref(dev);
-            continue;
+        } else if(output==JSON) {
+            jsonstream(dev);
+        } else {
+            devmsg(dev, LOG);           
         }
 
-        devmsg(dev, LOG);
         udev_device_unref(dev);
     }
     udev_unref(udev);
@@ -224,7 +255,7 @@ int main(int argc, char **argv) {
     strncpy(hostname, u.nodename, sizeof(hostname));
 
     while(1) {
-        c = getopt_long(argc, argv, "nch", options, &optidx);
+        c = getopt_long(argc, argv, "nchj", options, &optidx);
         if(c == -1)
             break;
 
@@ -241,11 +272,15 @@ int main(int argc, char **argv) {
                 output = COLLD;
                 o++;
                 break;
+            case 'j':
+                output = JSON;
+                o++;
+                break;
         }
     }
 
     if(o>1) {
-        fprintf(stderr, "Error: -c and -n cannot be used together\n\n%s", USAGE);
+        fprintf(stderr, "Error: -c, -n, -j cannot be used together\n\n%s", USAGE);
         return 0;
     }
 
