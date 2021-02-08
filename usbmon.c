@@ -27,6 +27,10 @@
 #include <libudev.h>
 #include <getopt.h>
 
+#define USAGE "usbmon [-n][-c]\n" \
+    "  -n do not monitor events\n" \
+    "  -c collectd exec plugin mode\n"
+
 char hostname[1024];
 
 struct collectd {
@@ -80,12 +84,6 @@ void putval(struct collectd *cv) {
     printf("PUTVAL %s/usbmon/usb_devices N:%.0f:%u:%u\n", 
         hostname, cv->connected, cv->adds, cv->removes);
     fflush(stdout);
-}
-
-void usage() {
-    printf("usbmon [-n][-c]\n" \
-    "  -n do not monitor events\n" \
-    "  -c collectd exec plugin mode\n");
 }
 
 void devmsg(struct udev_device *dev, int log) {
@@ -233,7 +231,7 @@ int main(int argc, char **argv) {
         switch(c) {
             case 0:
             case 'h':
-                usage();
+                puts(USAGE);
                 return 0;
             case 'n':
                 output = NONE;
@@ -247,8 +245,8 @@ int main(int argc, char **argv) {
     }
 
     if(o>1) {
-        usage();
-        logmsg(ERROR, "-c and -n cannot be used together");
+        fprintf(stderr, "Error: -c and -n cannot be used together\n\n%s", USAGE);
+        return 0;
     }
 
     usbmon(output);
