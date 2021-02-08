@@ -44,6 +44,7 @@ static struct option options[] = {
 
 enum { INFO, WARNING, ERROR };
 enum { NOLOG, LOG };
+enum { NONE, TEXT, COLLD };
 
 void logmsg(int state, char *msg, ...) {
     va_list ap;
@@ -115,7 +116,7 @@ void devmsg(struct udev_device *dev, int log) {
     );
 }
 
-void usbmon(int nomon, int colld) {
+void usbmon(int output) {
     struct udev *udev;
     struct udev_enumerate *enu;
     struct udev_monitor *mon;
@@ -146,7 +147,7 @@ void usbmon(int nomon, int colld) {
         path = udev_list_entry_get_name(entr);
         dev = udev_device_new_from_syspath(udev, path);
         if(dev && strcmp(udev_device_get_devtype(dev), "usb_device") == 0) {
-            if(colld) {
+            if(output==COLLD) {
                 cv.connected++;
             } else {
                 devmsg(dev, NOLOG);
@@ -156,10 +157,10 @@ void usbmon(int nomon, int colld) {
     }
     udev_enumerate_unref(enu);
 
-    if(nomon)
+    if(output==NONE)
        return;
 
-    if(!colld)
+    if(output==TEXT)
         logmsg(INFO, "--------- Begin USB Event Monitoring -----------");
 
     mon = udev_monitor_new_from_netlink(udev, "udev");
@@ -192,7 +193,7 @@ void usbmon(int nomon, int colld) {
             continue;
         }
 
-        if(colld) {
+        if(output==COLLD) {
             if(strcmp(udev_device_get_action(dev), "add")==0) {
                 cv.adds++;
                 cv.connected++;
@@ -216,7 +217,9 @@ void usbmon(int nomon, int colld) {
 
 int main(int argc, char **argv) {
     struct utsname u;
-    int colld = 0, nomon = 0, c, optidx = 0;
+    int c, optidx = 0;
+    int o = 0;
+    int output = TEXT;
 
     memset(&u, 0, sizeof(struct utsname));
     uname(&u);
@@ -233,20 +236,22 @@ int main(int argc, char **argv) {
                 usage();
                 return 0;
             case 'n':
-                nomon = 1;
+                output = NONE;
+                o++;
                 break;
             case 'c':
-                colld = 1;
+                output = COLLD;
+                o++;
                 break;
         }
     }
 
-    if(colld && nomon) {
+    if(o>1) {
         usage();
         logmsg(ERROR, "-c and -n cannot be used together");
     }
 
-    usbmon(nomon, colld);
+    usbmon(output);
 
     return 0;
 }
