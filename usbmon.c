@@ -142,7 +142,12 @@ void jsonstream(struct udev_device *dev) {
     if(!port)
         return;
 
-    printf("{ \"Port\": \"%s\", \"Serial\": \"%s\", \"Event\": \"%s\", \"Speed\": %.1f }, ",
+    printf("{ "\
+                "\"Port\": \"%s\", "\
+                "\"Serial\": \"%s\", "\
+                "\"Event\": \"%s\", "\
+                "\"Speed\": %.1f "\
+            "}, ",
         port,
         (serial) ? serial : "N/A",
         (action) ? action : "enum",
@@ -151,7 +156,6 @@ void jsonstream(struct udev_device *dev) {
 
     fflush(stdout);
 }
-
 
 void usbmon(int output) {
     struct udev *udev;
