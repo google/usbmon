@@ -27,7 +27,7 @@
 #include <libudev.h>
 #include <getopt.h>
 
-#define USAGE "usbmon [-n][-c]\n" \
+#define USAGE "usbmon [-n][-c] [-j]\n" \
     "  -n do not monitor events\n" \
     "  -c collectd exec plugin mode\n" \
     "  -j json stream output\n"
@@ -187,26 +187,30 @@ void usbmon(int output) {
         path = udev_list_entry_get_name(entr);
         dev = udev_device_new_from_syspath(udev, path);
         if(dev && strcmp(udev_device_get_devtype(dev), "usb_device") == 0) {
-            if(output==COLLD) {
-                cv.connected++;
-            } else if(output==JSON) {
-                jsonstream(dev);
-            } else {
-                devmsg(dev, NOLOG);
+            switch(output) {
+                case COLLD:
+                    cv.connected++;
+                    break;
+                case JSON:
+                    jsonstream(dev);
+                    break;
+                default:
+                    devmsg(dev, NOLOG);
             }
         }
         udev_device_unref(dev);
     }
     udev_enumerate_unref(enu);
 
-    if(output==NONE)
-       return;
-
-    if(output==TEXT)
-        logmsg(INFO, "--------- Begin USB Event Monitoring -----------");
-
-    if(output==COLLD)
-        putval(NULL, &cv);
+    switch(output) {
+        case NONE:
+            return;
+        case TEXT:
+            logmsg(INFO, "--------- Begin USB Event Monitoring -----------");
+            break;
+        case COLLD:
+            putval(NULL, &cv);
+    }
 
     mon = udev_monitor_new_from_netlink(udev, "udev");
     if(!mon)
@@ -238,12 +242,15 @@ void usbmon(int output) {
             continue;
         }
 
-        if(output==COLLD) {
-            putval(dev, &cv);
-        } else if(output==JSON) {
-            jsonstream(dev);
-        } else {
-            devmsg(dev, LOG);
+        switch(output) {
+            case COLLD:
+                putval(dev, &cv);
+                break;
+            case JSON:
+                jsonstream(dev);
+                break;
+            default:
+                devmsg(dev, LOG);
         }
 
         udev_device_unref(dev);
