@@ -186,17 +186,19 @@ void usbmon(int output) {
     udev_list_entry_foreach(entr, lst) {
         path = udev_list_entry_get_name(entr);
         dev = udev_device_new_from_syspath(udev, path);
-        if(dev && strcmp(udev_device_get_devtype(dev), "usb_device") == 0) {
-            switch(output) {
-                case COLLD:
-                    cv.connected++;
-                    break;
-                case JSON:
-                    jsonstream(dev);
-                    break;
-                default:
-                    devmsg(dev, NOLOG);
-            }
+        if(dev && strcmp(udev_device_get_devtype(dev), "usb_device") != 0) {
+            udev_device_unref(dev);
+            continue;
+        }
+        switch(output) {
+            case COLLD:
+                cv.connected++;
+                break;
+            case JSON:
+                jsonstream(dev);
+                break;
+            default:
+                devmsg(dev, NOLOG);
         }
         udev_device_unref(dev);
     }
