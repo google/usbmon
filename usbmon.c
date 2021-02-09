@@ -82,7 +82,20 @@ void logmsg(int state, char *msg, ...) {
         exit(1);
 }
 
-void putval(struct collectd *cv) {
+void putval(struct udev_device *dev, struct collectd *cv) {
+    const char *action;
+
+    if((dev) && (action=udev_device_get_action(dev))) {
+        if(strcmp(action, "add")==0) {
+            cv->adds++;
+            cv->connected++;
+        } else if (strcmp(action, "remove")==0) {
+            cv->removes++;
+            cv->connected--;
+        }
+    }
+
+    // TODO(tenox): add output throttling
     printf("PUTVAL %s/usbmon/usb_devices N:%.0f:%u:%u\n",
         hostname, cv->connected, cv->adds, cv->removes);
     fflush(stdout);
@@ -192,6 +205,9 @@ void usbmon(int output) {
     if(output==TEXT)
         logmsg(INFO, "--------- Begin USB Event Monitoring -----------");
 
+    if(output==COLLD)
+        putval(NULL, &cv);
+
     mon = udev_monitor_new_from_netlink(udev, "udev");
     if(!mon)
         logmsg(ERROR, "udev_monitor_new_from_netlink() failed\n");
@@ -223,15 +239,7 @@ void usbmon(int output) {
         }
 
         if(output==COLLD) {
-            if(strcmp(udev_device_get_action(dev), "add")==0) {
-                cv.adds++;
-                cv.connected++;
-            } else if (strcmp(udev_device_get_action(dev), "remove")==0) {
-                cv.removes++;
-                cv.connected--;
-            }
-            // TODO(tenox): add output throttling
-            putval(&cv);
+            putval(dev, &cv);
         } else if(output==JSON) {
             jsonstream(dev);
         } else {
