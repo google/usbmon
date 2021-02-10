@@ -1,0 +1,12 @@
+Package: usbmon
+Version: 1.1-1
+Section: base
+Priority: optional
+Architecture: amd64
+Depends: libudev1
+Maintainer: Antoni Sawicki <tenox@google.com>
+Homepage: https://github.com/google/usbmon
+Description: Monitor USB events such as connect/disconnect
+ Utility to allow monitoring USB events (connect/disconnect)
+ via Udev. Can output to terminal, Collectd or JSON stream.
+
