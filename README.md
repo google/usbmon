@@ -45,15 +45,21 @@ Usbmon can generate a streaming JSON output with per port events.
 Streaming JSON is basically a never ending array. To use in Go:
 
 ```
+type evt struct {
+  Port   string
+  Serial string
+  Event  string
+  Speed  float32
+}
 u := exec.Command("usbmon")
 o, _ := u.StdoutPipe()
 u.Start()
 d := json.NewDecoder(o)
 d.Token() // read opening [
 for d.More() {
-	var m msg
-	d.Decode(&m)
-	fmt.Printf("%+v\n", m)
+  var e evt
+  d.Decode(&e)
+  fmt.Printf("%+v\n", e)
 }
 ```
 
